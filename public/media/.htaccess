@@ -1,0 +1,15 @@
+# Aucun script exécutable dans le dossier des médias
+Options -Indexes -ExecCGI
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<FilesMatch "(?i)\.(php[0-9]?|phtml|phar|pl|py|cgi|sh|htaccess)$">
+    Require all denied
+</FilesMatch>
+RemoveHandler .php .phtml .phar
+RemoveType .php .phtml .phar
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+</IfModule>

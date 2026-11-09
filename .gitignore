@@ -1,0 +1,14 @@
+.env
+/vendor/
+.phpunit.cache/
+/storage/logs/*
+/storage/sessions/*
+/storage/exports/*
+/storage/cache/*
+/storage/uploads_tmp/*
+/storage/installed.lock
+!/storage/**/.gitkeep
+/public/media/*
+!/public/media/.htaccess
+*.log
+*.sql.bak
