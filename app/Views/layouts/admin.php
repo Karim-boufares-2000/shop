@@ -17,7 +17,7 @@
 </head>
 <body class="admin">
     <a class="skip-link" href="#main"><?= $this->e($this->t('a11y.skip')) ?></a>
-    <header class="site-header">
+    <header class="site-header admin-header">
         <span class="brand"><?= $this->e($this->t('app.name')) ?> · <?= $this->e($this->t('admin.area')) ?></span>
         <?= $this->partial('partials/lang-switch') ?>
         <?php if (isset($admin)): ?>

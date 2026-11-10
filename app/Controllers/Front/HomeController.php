@@ -6,19 +6,25 @@ namespace App\Controllers\Front;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\UrlGenerator;
 use App\Core\View;
+use App\Services\StorefrontService;
 
 final class HomeController
 {
-    public function __construct(private View $view)
+    public function __construct(private View $view, private StorefrontService $storefront, private UrlGenerator $urls)
     {
     }
 
     /** @param array<string,string> $params */
     public function index(Request $request, array $params): Response
     {
-        return Response::html($this->view->render('front/home', [
-            'title' => $this->view->t('app.name'),
+        return Response::html($this->view->render('public/home', $this->storefront->home() + [
+            'seo' => [
+                'description' => $this->view->t('seo.home_description'),
+                'canonical' => $this->urls->absolute('/'),
+                'type' => 'website',
+            ],
         ]));
     }
 }

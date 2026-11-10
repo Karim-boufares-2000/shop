@@ -99,6 +99,19 @@ final class RequestTest extends TestCase
         ];
     }
 
+    public function testHostIsValidatedAndForwardedHostIgnored(): void
+    {
+        $this->assertSame('localhost:8080', $this->make(['HTTP_HOST' => 'localhost:8080'])->host());
+        $this->assertSame('boutique.exemple.com', $this->make(['HTTP_HOST' => 'boutique.exemple.com', 'HTTP_X_FORWARDED_HOST' => 'evil.test'])->host());
+        $this->assertSame('srv.local', $this->make(['HTTP_HOST' => "evil.com/../x\r\nX: y", 'SERVER_NAME' => 'srv.local'])->host());
+        $this->assertSame('localhost', $this->make([])->host());
+    }
+
+    public function testQueryAllReturnsAllParameters(): void
+    {
+        $this->assertSame(['q' => 'a', 'page' => '2'], $this->make([], [], ['q' => 'a', 'page' => '2'])->queryAll());
+    }
+
     public function testClientIpIgnoresForwardedForHeader(): void
     {
         $r = $this->make(['REMOTE_ADDR' => '203.0.113.5', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4']);

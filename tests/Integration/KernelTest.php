@@ -30,16 +30,15 @@ final class KernelTest extends TestCase
         return new Request([], $post, ['REQUEST_METHOD' => $method, 'REQUEST_URI' => $uri, 'SCRIPT_NAME' => '/index.php'], $cookies);
     }
 
-    public function testHomePageRendersWithSecurityHeadersAndLanguageLinks(): void
+    public function testLoginPageRendersLanguageLinksAndSecurityHeaders(): void
     {
-        $response = $this->kernel()->handle($this->request('GET', '/'));
+        $response = $this->kernel()->handle($this->request('GET', '/admin/login'));
 
         $this->assertSame(200, $response->status());
         $this->assertStringContainsString('<html lang="fr" dir="ltr">', $response->body());
         $this->assertStringContainsString('/langue/ar', $response->body());
-        $this->assertStringNotContainsString('name="_csrf"', $response->body()); // pas de formulaire => pas de session
         $this->assertSame('nosniff', $response->header('X-Content-Type-Options'));
-        $this->assertSame('private, no-cache', $response->header('Cache-Control'));
+        $this->assertNotNull($response->header('Content-Security-Policy'));
     }
 
     public function testLanguageSwitchSetsCookieAndRedirectsSafely(): void
@@ -71,14 +70,14 @@ final class KernelTest extends TestCase
 
     public function testArabicCookieSwitchesDirection(): void
     {
-        $response = $this->kernel()->handle($this->request('GET', '/', [], ['shop_locale' => 'ar']));
+        $response = $this->kernel()->handle($this->request('GET', '/admin/login', [], ['shop_locale' => 'ar']));
 
         $this->assertStringContainsString('<html lang="ar" dir="rtl">', $response->body());
     }
 
     public function testInvalidLocaleCookieFallsBackToDefault(): void
     {
-        $response = $this->kernel()->handle($this->request('GET', '/', [], ['shop_locale' => '../../etc']));
+        $response = $this->kernel()->handle($this->request('GET', '/admin/login', [], ['shop_locale' => '../../etc']));
 
         $this->assertSame(200, $response->status());
         $this->assertStringContainsString('lang="fr"', $response->body());

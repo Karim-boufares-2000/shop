@@ -10,7 +10,10 @@ use App\Controllers\Admin\ProductController;
 use App\Controllers\Admin\ProductImageController;
 use App\Controllers\Admin\VariantController;
 use App\Controllers\Front\HomeController;
+use App\Controllers\Front\CatalogController;
 use App\Controllers\Front\LocaleController;
+use App\Controllers\Front\ProductPageController;
+use App\Controllers\Front\SeoController;
 use App\Core\Container;
 use App\Core\Router;
 use App\Middleware\AdminAuthMiddleware;
@@ -22,6 +25,11 @@ return static function (Router $router, Container $container): void {
 
     // Public
     $router->get('/', [HomeController::class, 'index']);
+    $router->get('/produits', [CatalogController::class, 'index']);
+    $router->get('/categorie/{slug:[a-z0-9-]+}', [CatalogController::class, 'category']);
+    $router->get('/produit/{slug:[a-z0-9-]+}', [ProductPageController::class, 'show']);
+    $router->get('/sitemap.xml', [SeoController::class, 'sitemap']);
+    $router->get('/robots.txt', [SeoController::class, 'robots']);
     $router->get('/langue/{code:[a-z][a-z]}', [LocaleController::class, 'switch']);
 
     // Administration : connexion (hors groupe protégé)

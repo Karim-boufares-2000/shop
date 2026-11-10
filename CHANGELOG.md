@@ -1,5 +1,12 @@
 # Historique des modifications
 
+## 0.4.0 — en cours (Partie 4 : boutique publique et nouveau design)
+- Pages publiques : accueil (bandeau, avantages, catégories, vedettes, nouveautés, promotions), catalogue (recherche, filtres catégorie/prix/disponibilité/promotions, tri, pagination), pages de catégorie, fiches produit (galerie, promotion, variantes, similaires).
+- Règle de visibilité centralisée (produit + catégorie + parent actifs) ; produits masqués = 404 ; disponibilité calculée avec les variantes actives.
+- SEO : slugs, titres, descriptions, canoniques absolues, Open Graph, JSON-LD Product, sitemap.xml, robots.txt, noindex sur les pages filtrées.
+- Nouveau design system (CSS maison, responsive, RTL natif, accessible) appliqué à la boutique ET à l'administration.
+- Outils : `ListingFilters`, `UrlGenerator::absolute`, `View::localized/text/share`, `Request::host`, `Kernel::boot($basePath, $envOverrides)`.
+
 ## 0.3.0 — en cours (Partie 3 : catalogue d'administration)
 - Catégories (2 niveaux), produits (prix/promo en DECIMAL, stock, activation, vedette), variantes (SKU, prix spécifique, stock).
 - Téléversement d'images sécurisé : type réel, dimensions, ré-encodage JPEG, noms aléatoires, miniatures, aucune exécution possible.

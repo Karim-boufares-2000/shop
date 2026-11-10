@@ -10,6 +10,11 @@ namespace App\Core;
  */
 final class View
 {
+    /** @var array<string,callable> */
+    private array $providers = [];
+    /** @var array<string,mixed> */
+    private array $resolved = [];
+
     public function __construct(
         private string $viewsPath,
         private UrlGenerator $urls,
@@ -28,6 +33,60 @@ final class View
         }
 
         return $this->capture($layout, array_merge($data, ['content' => $content]));
+    }
+
+    /** Nom/description dans la langue courante, avec repli sur le français. @param array<string,mixed> $row */
+    public function localized(array $row, string $field): string
+    {
+        if ($this->translator->locale() === 'ar') {
+            $arabic = $row[$field . '_ar'] ?? null;
+            if (is_string($arabic) && $arabic !== '') {
+                return $arabic;
+            }
+        }
+
+        return (string) ($row[$field . '_fr'] ?? '');
+    }
+
+    /** Texte brut -> HTML sûr (échappé, retours à la ligne conservés). */
+    public function text(string $value): string
+    {
+        return nl2br($this->e($value), false);
+    }
+
+    /** Pourcentage de réduction entre deux montants normalisés (entiers, sans float monétaire). */
+    public function discountPercent(string $price, string $promo): int
+    {
+        $full = \App\Support\Money::toCents($price);
+
+        return $full > 0 ? (int) round((1 - \App\Support\Money::toCents($promo) / $full) * 100) : 0;
+    }
+
+    /** @param array<string,scalar> $query */
+    public function absoluteUrl(string $path = '/', array $query = []): string
+    {
+        return $this->urls->absolute($path, $query);
+    }
+
+    public function icon(string $name): string
+    {
+        return $this->partial('partials/icon', ['name' => $name]);
+    }
+
+    /** Donnée partagée avec les gabarits, calculée à la demande (une seule fois par requête). */
+    public function share(string $key, callable $provider): void
+    {
+        $this->providers[$key] = $provider;
+    }
+
+    public function shared(string $key): mixed
+    {
+        if (!array_key_exists($key, $this->resolved)) {
+            $provider = $this->providers[$key] ?? null;
+            $this->resolved[$key] = $provider === null ? null : $provider();
+        }
+
+        return $this->resolved[$key];
     }
 
     /** @param array<string,mixed> $data */

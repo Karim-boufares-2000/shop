@@ -12,8 +12,11 @@ use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\ProductController;
 use App\Controllers\Admin\ProductImageController;
 use App\Controllers\Admin\VariantController;
+use App\Controllers\Front\CatalogController;
 use App\Controllers\Front\HomeController;
 use App\Controllers\Front\LocaleController;
+use App\Controllers\Front\ProductPageController;
+use App\Controllers\Front\SeoController;
 use App\Middleware\AdminAuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Repositories\AdminUserRepository;
@@ -21,6 +24,7 @@ use App\Repositories\AdminUserRepositoryInterface;
 use App\Repositories\CategoryRepository;
 use App\Repositories\ProductImageRepository;
 use App\Repositories\ProductRepository;
+use App\Repositories\StorefrontRepository;
 use App\Repositories\VariantRepository;
 use App\Services\AuditLogger;
 use App\Services\AuditLoggerInterface;
@@ -32,6 +36,8 @@ use App\Services\ProductImageService;
 use App\Services\ProductService;
 use App\Services\RateLimiter;
 use App\Services\RateLimiterInterface;
+use App\Services\SeoService;
+use App\Services\StorefrontService;
 use App\Services\VariantService;
 use App\Validation\PhoneNumber;
 use App\Validation\Validator;
@@ -45,9 +51,13 @@ final class Kernel
     ) {
     }
 
-    public static function boot(string $basePath): self
+    /** @param array<string,string> $envOverrides valeurs prioritaires sur .env (utilisé par les tests : base de test, APP_URL) */
+    public static function boot(string $basePath, array $envOverrides = []): self
     {
         Env::load($basePath . '/.env');
+        foreach ($envOverrides as $key => $value) {
+            Env::set($key, $value);
+        }
         $config = Config::fromDirectory($basePath . '/app/Config');
 
         date_default_timezone_set((string) $config->get('app.timezone', 'UTC'));
@@ -123,14 +133,28 @@ final class Kernel
             return new Translator($basePath . '/lang', $locale);
         });
 
-        $c->singleton(UrlGenerator::class, static fn (Container $c): UrlGenerator => new UrlGenerator($c->make(Request::class)->basePath()));
-        $c->singleton(View::class, static fn (Container $c): View => new View(
-            $basePath . '/app/Views',
-            $c->make(UrlGenerator::class),
-            $c->make(Translator::class),
-            $c->make(Csrf::class),
-            $c->make(Request::class),
-        ));
+        $c->singleton(UrlGenerator::class, static function (Container $c) use ($config): UrlGenerator {
+            $request = $c->make(Request::class);
+            // URL publique : APP_URL si elle est valide, sinon dérivée de la requête (hôte validé).
+            $configured = rtrim((string) $config->get('app.url', ''), '/');
+            $valid = $configured !== '' && preg_match('#^https?://[A-Za-z0-9.-]+(:\d{1,5})?(/[A-Za-z0-9._~/-]*)?$#', $configured) === 1;
+            $siteUrl = $valid ? $configured : ($request->isSecure() ? 'https' : 'http') . '://' . $request->host() . $request->basePath();
+
+            return new UrlGenerator($request->basePath(), $siteUrl);
+        });
+        $c->singleton(View::class, static function (Container $c) use ($basePath): View {
+            $view = new View(
+                $basePath . '/app/Views',
+                $c->make(UrlGenerator::class),
+                $c->make(Translator::class),
+                $c->make(Csrf::class),
+                $c->make(Request::class),
+            );
+            // Catégories du menu public : lues seulement si le gabarit les demande.
+            $view->share('navCategories', static fn (): array => $c->make(StorefrontService::class)->categoryTree());
+
+            return $view;
+        });
 
         $c->singleton(PhoneNumber::class, static fn (): PhoneNumber => new PhoneNumber(
             (string) $config->get('market.dial_code', '213'),
@@ -163,7 +187,30 @@ final class Kernel
             $c->make(UrlGenerator::class),
         ));
 
-        $c->bind(HomeController::class, static fn (Container $c): HomeController => new HomeController($c->make(View::class)));
+        $c->singleton(StorefrontRepository::class, static fn (Container $c): StorefrontRepository => new StorefrontRepository($c->make(Database::class)));
+        $c->singleton(StorefrontService::class, static fn (Container $c): StorefrontService => new StorefrontService($c->make(StorefrontRepository::class)));
+        $c->singleton(SeoService::class, static fn (): SeoService => new SeoService((string) $config->get('market.currency_code', 'DZD')));
+        $c->bind(HomeController::class, static fn (Container $c): HomeController => new HomeController(
+            $c->make(View::class),
+            $c->make(StorefrontService::class),
+            $c->make(UrlGenerator::class),
+        ));
+        $c->bind(CatalogController::class, static fn (Container $c): CatalogController => new CatalogController(
+            $c->make(View::class),
+            $c->make(StorefrontService::class),
+            $c->make(SeoService::class),
+            $c->make(UrlGenerator::class),
+        ));
+        $c->bind(ProductPageController::class, static fn (Container $c): ProductPageController => new ProductPageController(
+            $c->make(View::class),
+            $c->make(StorefrontService::class),
+            $c->make(SeoService::class),
+            $c->make(UrlGenerator::class),
+        ));
+        $c->bind(SeoController::class, static fn (Container $c): SeoController => new SeoController(
+            $c->make(StorefrontService::class),
+            $c->make(UrlGenerator::class),
+        ));
         $c->bind(LocaleController::class, static fn (Container $c): LocaleController => new LocaleController($c->make(UrlGenerator::class)));
         $c->bind(AuthController::class, static fn (Container $c): AuthController => new AuthController(
             $c->make(View::class),

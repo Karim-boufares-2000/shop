@@ -63,6 +63,25 @@ final class Request
         return $this->query[$key] ?? $default;
     }
 
+    /** @return array<string,mixed> */
+    public function queryAll(): array
+    {
+        return $this->query;
+    }
+
+    /** Nom d'hôte validé (jamais d'en-tête X-Forwarded-Host) ; "localhost" si invalide. */
+    public function host(): string
+    {
+        foreach (['HTTP_HOST', 'SERVER_NAME'] as $key) {
+            $value = $this->server[$key] ?? null;
+            if (is_string($value) && preg_match('/^[A-Za-z0-9.-]+(:\d{1,5})?$/', $value) === 1) {
+                return $value;
+            }
+        }
+
+        return 'localhost';
+    }
+
     public function post(string $key, mixed $default = null): mixed
     {
         return $this->post[$key] ?? $default;

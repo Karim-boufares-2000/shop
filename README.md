@@ -1,6 +1,6 @@
 # Boutique en ligne — script e-commerce (Partie 1 : socle technique)
 
-Version de développement `0.3.0` : socle (partie 1), authentification administrateur (partie 2), catalogue d'administration (partie 3).
+Version de développement `0.4.0` : socle (partie 1), authentification administrateur (partie 2), catalogue d'administration (partie 3), boutique publique et design (partie 4).
 Le catalogue, le panier, la commande et l'export CSV arrivent dans les parties suivantes.
 
 ## Prérequis
@@ -27,6 +27,11 @@ Le catalogue, le panier, la commande et l'export CSV arrivent dans les parties s
 - Extensions PHP requises : `gd`, `fileinfo`, `mbstring` (activées par défaut dans XAMPP ; vérifier avec `php -m`).
 - Les images sont écrites dans `public/media/products/` : ce dossier doit être accessible en écriture par le serveur web.
 - Administration : `/admin/categories` et `/admin/products` (après connexion).
+
+## Boutique publique (partie 4)
+- Pages : `/` (accueil), `/produits`, `/categorie/{slug}`, `/produit/{slug}`, `/sitemap.xml`, `/robots.txt`.
+- Renseigner `APP_URL` dans `.env` (ex. `http://localhost/shop` en local, `https://votre-domaine.com` en production) : il sert aux adresses canoniques, au plan du site et aux données structurées.
+- Design : feuille de styles maison `public/assets/css/app.css` (pas de Bootstrap : voir `docs/adr/0005`).
 
 ## Tests
 ```
